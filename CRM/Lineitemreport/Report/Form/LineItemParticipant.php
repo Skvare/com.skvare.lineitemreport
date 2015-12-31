@@ -1,10 +1,17 @@
 <?php
 
 /**
- * @file
+ * @file 
+ * Provides fields and preprocessing for participant line item selections
+ * \CRM\Lineitemreport\Report\Form\LineItemParticipant
  */
 class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemreport_Report_Form_LineItem {
 
+  /**
+   * ennumerate which custom field groups will be exposed to the report query
+   *
+   * @var        array
+   */
   protected $_customGroupExtends = array(
     'Participant',
     'Contact',

@@ -1,7 +1,9 @@
 <?php
 
 /**
- * @file
+ * @file 
+ * Provides fields and preprocessing for membership line item selections
+ * \CRM\Lineitemreport\Report\Form\LineItemMember
  */
 class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_Report_Form_LineItem {
 
@@ -14,6 +16,11 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
   protected $_memberField = FALSE;
   
 
+  /**
+   * ennumerate which custom field groups will be exposed to the report query
+   *
+   * @var        array
+   */
   protected $_customGroupExtends = array(
     'Contact',
     'Individual',

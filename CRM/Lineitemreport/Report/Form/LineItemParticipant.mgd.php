@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Provides entity definition for registering the participant line item report template
+ */
 
 return array(
   0 => array(

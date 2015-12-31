@@ -1,4 +1,9 @@
 <?php
+/**
+ * @file
+ * Provides entity definition for registering the contribution line item report template
+ */
+
 return array(
   0 => array(
     'name' => 'Contribution Line Items',

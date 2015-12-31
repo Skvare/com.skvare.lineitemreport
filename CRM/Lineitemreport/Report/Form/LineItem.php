@@ -2,6 +2,7 @@
 
 /**
  * @file
+ * Base class for the line item report
  */
 class CRM_Lineitemreport_Report_Form_LineItem extends CRM_Report_Form {
 

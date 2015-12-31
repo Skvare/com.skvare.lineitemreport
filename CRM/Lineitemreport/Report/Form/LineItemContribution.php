@@ -1,7 +1,9 @@
 <?php
 
 /**
- * @file
+ * @file 
+ * Provides fields and preprocessing for contribution line item selections
+ * \CRM\Lineitemreport\Report\Form\LineItemContribution
  */
 class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemreport_Report_Form_LineItem {
 
