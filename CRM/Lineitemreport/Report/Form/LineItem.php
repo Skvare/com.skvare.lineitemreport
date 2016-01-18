@@ -443,7 +443,7 @@ ORDER BY  cv.label
     $this->_from = "
         FROM civicrm_{$this->_entity} {$this->_aliases['civicrm_'.$this->_entity]}
              LEFT JOIN civicrm_contact {$this->_aliases['civicrm_contact']}
-                    ON ({$this->_aliases['civicrm_'.$this->_entity]}.contact_id  = {$this->_aliases['civicrm_contact']}.id  )
+                    ON {$this->_aliases['civicrm_'.$this->_entity]}.contact_id  = {$this->_aliases['civicrm_contact']}.id
              {$this->_aclFrom}
              LEFT JOIN civicrm_address {$this->_aliases['civicrm_address']}
                     ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_address']}.contact_id AND
