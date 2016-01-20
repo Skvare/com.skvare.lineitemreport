@@ -140,7 +140,6 @@ LEFT JOIN civicrm_price_set_entity ce
   ON ce.price_set_id = cf.price_set_id
 LEFT JOIN civicrm_price_set ps
   ON ce.price_set_id = ps.id
-WHERE ce.entity_table = 'civicrm_event'
 ORDER BY  cv.label
 ";
     $dao = CRM_Core_DAO::executeQuery($query);
@@ -178,7 +177,7 @@ ORDER BY  cv.label
       case 'fieldlist':
         $select = "SELECT DISTINCT li.price_field_id FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
-        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id AND pse.entity_table = 'civicrm_event'";
+        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
         $where = "WHERE pse.price_set_id = $psId";
         if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
 
@@ -199,7 +198,7 @@ ORDER BY  cv.label
       case 'filters':
         $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
-        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id AND pse.entity_table = 'civicrm_event'";
+        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
         $where = "WHERE pse.price_set_id = $psId";
         if (isset($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
 
@@ -237,7 +236,7 @@ ORDER BY  cv.label
       default:
         $select = "SELECT DISTINCT li.price_field_id, pf.name, pf.label, pf.is_enter_qty FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
-        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id AND pse.entity_table = 'civicrm_event'";
+        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
         $where = "WHERE pse.price_set_id = $psId";
         if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
 
@@ -270,6 +269,14 @@ ORDER BY  cv.label
 
       switch ($this->_entity) {
         case 'membership':
+          foreach (array_diff($this->_entities, array($this->_entity)) AS $other) {
+            unset($this->_columns['civicrm_'.$other]);
+            unset($this->_extendedEntities[$other]);
+          }
+          unset($this->_columns['civicrm_event']);
+          $entityId = $this->_submitValues['membership_type_id_value'];
+        break;
+
         case 'contribution':
           foreach (array_diff($this->_entities, array($this->_entity)) AS $other) {
             unset($this->_columns['civicrm_'.$other]);
@@ -507,7 +514,7 @@ ORDER BY  cv.label
 
         case 'membership':
           $entityId = $this->_submitValues['tid_value'];
-          $entityTable = 'civicrm_contribution_page';
+          $entityTable = 'civicrm_membership';
           break;
 
         case 'contribution':
