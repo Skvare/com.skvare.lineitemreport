@@ -7,7 +7,7 @@
  */
 class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemreport_Report_Form_LineItem {
 
-
+  protected $_entity = 'contribution';
   /**
    * a flag to denote whether the civicrm_contribution table needs to be included in the SQL query
    *
@@ -338,45 +338,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
       );
     }
 
-    // Create a column grouping for each price set
-
-      $extendedEntities = array('participant'=>'CiviEvent','contribution'=>'CiviContribute','membership'=>'CiviMember');
-      $this->_uri = parse_url($_SERVER['REQUEST_URI']);
-      $this->_entity = array_pop(explode('/',$this->_uri['path']));
-      $this->_entities = array('contribution','member','participant');
-
-      switch ($this->_entity) {
-        case 'membership':
-        case 'contribution':
-          foreach (array_diff($this->_entities, array($this->_entity)) AS $other) {
-            unset($this->_columns['civicrm_'.$other]);
-            unset($extendedEntities[$other]);
-          }
-          unset($this->_columns['civicrm_event']);
-        break;
-
-        case 'participant':
-          foreach (array_diff($this->_entities, array($this->_entity)) AS $other) {
-            unset($this->_columns['civicrm_'.$other]);
-            unset($extendedEntities[$other]);
-          }
-        break;
-
-      }
-      
-      $relevantPriceSets = $this->getPriceSets(array_values($extendedEntities));
-      foreach ($relevantPriceSets AS $ps) {
-        $this->_columns['civicrm_price_set_'.$ps['id']] = array(
-          'alias' => 'ps'.$ps['id'],
-          'dao' => 'CRM_Price_DAO_LineItem',
-          'grouping' => 'priceset-fields-'.$ps['name'],
-          'group_title' => 'Price Fields - '.$ps['title'],
-        );
-
-          $this->_columns['civicrm_price_set_'.$ps['id']]['fields'] = $this->getPriceFields($ps['id'], null);
-          $this->_columns['civicrm_price_set_'.$ps['id']]['filters'] = $this->getPriceFields($ps['id'], null, 'filters');
-      }
-        
+    $this->organizeColumns();        
 
     $this->_currencyColumn = 'civicrm_participant_fee_currency';
     parent::__construct();

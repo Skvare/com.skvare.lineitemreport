@@ -8,6 +8,7 @@
 class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_Report_Form_LineItem {
 
 
+  protected $_entity = 'membership';
   /**
    * a flag to denote whether the civicrm_member* tables need to be included in the SQL query
    *
