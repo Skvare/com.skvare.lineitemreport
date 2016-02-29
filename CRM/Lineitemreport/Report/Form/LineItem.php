@@ -283,7 +283,7 @@ ORDER BY  cv.label
     if (is_array($entityId)) $entityId = implode(',', $entityId);
     $query = "SELECT id FROM civicrm_price_set_entity WHERE price_set_id = $psId";
     if (isset($entityId)) $query .= " AND entity_id IN ($entityId)";
-    var_dump($query);
+    // var_dump($query);
     $dao = CRM_Core_DAO::executeQuery($query);
     $entityCt = 0;
     while ($dao->fetch()) {
@@ -703,7 +703,7 @@ ORDER BY  cv.label
     $this->buildACLClause($this->_aliases['civicrm_contact']);
     // build query
     $sql = $this->buildQuery(TRUE);
-    // var_dump($sql);
+    var_dump($sql);
 
     // build array of result based on column headers. This method also allows
     // modifying column headers before using it to build result set i.e $rows.
