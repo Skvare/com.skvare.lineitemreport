@@ -101,17 +101,27 @@ ORDER BY  cv.label
     $dao = CRM_Core_DAO::executeQuery($query);
     $elements = array();
     while ($dao->fetch()) {
-      $elements[$dao->id] = "$dao->label\n";
+      if ($this->_entity != 'participant')
+      $elements[$dao->id] = "$dao->amount\n";
+      else $elements[$dao->id] = "$dao->label\n";
+
     }
 
     return $elements;
   }
 
-  public function getPriceSets($extends) {
+  /**
+   * Get price set data for the specified ids
+   *
+   * @param      string  $ids    list of price set ids
+   *
+   * @return     array
+   */
+  public function getPriceSets($ids) {
     $fields = array();
     $pricesets = civicrm_api3('PriceSet', 'get', array(
       'sequential' => 1,
-      'extends' => array('IN'=>$extends),
+      'id' => array('IN'=>$ids),
       'is_active' => 1,
       'options' => array('limit'=>1000),
     ));
@@ -120,23 +130,43 @@ ORDER BY  cv.label
   }
 
   /**
+   * Get a price set based on a provided member field
+   *
+   * @param      int  $priceFieldId  price_field_id
+   *
+   * @return     int
+   */
+  public function getPriceSetFromField($priceFieldId)
+  {
+    $params = array(
+      'price_field_id'  =>  $priceFieldId,
+      'return'          =>  'price_set_id',
+    );
+    $priceSet = civicrm_api3('PriceField','getvalue',$params);
+
+    if ($priceSet['is_error'] == 0)
+      return $priceSet['result'];
+
+    return false;
+  }
+
+  /**
    * Get price set fields for a given price set and entity
    *
    * @param      int  $psId      (description)
-   * @param      int  $entityId  (description)
    * @param      string  $format    (description)
    * 
    * return     returns array of fields
    */
-  public function getPriceFields($psId, $entityId, $format=null) {
+  public function getPriceFields($psId, $format=null) {
     if (is_array($entityId)) $entityId = implode(',', $entityId);
     switch($format) {
       case 'fieldlist':
         $select = "SELECT DISTINCT li.price_field_id FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
-        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
-        $where = "WHERE pse.price_set_id = $psId";
-        if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
 
         $order = "ORDER BY li.price_field_id;";
         $query = sprintf("%s\n%s\n%s",$select,$where,$order);
@@ -153,11 +183,11 @@ ORDER BY  cv.label
       break;
 
       case 'filters':
-        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty FROM civicrm_line_item li
+        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf_html_type FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
-        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
-        $where = "WHERE pse.price_set_id = $psId";
-        if (isset($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (isset($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
 
         $order = "ORDER BY li.price_field_id;";
         $query = sprintf("%s\n%s\n%s",$select,$where,$order);
@@ -172,7 +202,7 @@ ORDER BY  cv.label
             'type' => CRM_Utils_Type::T_INT,
           );
           if ($dao->is_enter_qty == 1) $filters[$dao->name]['name'] = 'qty';
-          if ($dao->html_type != 'text') {
+          if ($dao->html_type != 'Text') {
             $filters[$dao->name]['operatorType'] = CRM_Report_Form::OP_MULTISELECT;
             $result = civicrm_api3('PriceFieldValue', 'get', array(
                 'sequential' => 1,
@@ -193,9 +223,9 @@ ORDER BY  cv.label
       default:
         $select = "SELECT DISTINCT li.price_field_id, pf.name, pf.label, pf.is_enter_qty FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
-        JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
-        $where = "WHERE pse.price_set_id = $psId";
-        if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
 
         $order = "ORDER BY li.price_field_id;";
         $query = sprintf("%s\n%s\n%s",$select,$where,$order);
@@ -289,9 +319,10 @@ ORDER BY  cv.label
     while ($dao->fetch()) {
       // CRM_Core_Error::debug($dao->id,'entityCt');
       $entityCt = $dao->id;
+      return $entityCt;
     }
 
-    return $entityCt;
+    return false;
   }
 
   /**
@@ -316,9 +347,9 @@ ORDER BY  cv.label
       $this->_columnHeaders['blankColumnBegin']['title'] = '_ _ _ _';
     }
     
-    var_dump($this->_entity);
-
-    foreach ($this->_columns as $tableName => $table) {
+    // var_dump($this->_columns);
+    foreach ($this->_columns as $tableName => &$table) {
+      
      
       if ($tableName == 'civicrm_participant') {
         $this->_eventField = TRUE;
@@ -348,39 +379,41 @@ ORDER BY  cv.label
         switch($this->_entity) {
           case 'membership':
             $entityId = $this->_submitValues['tid_value'];
+            $relevantPriceSets = $this->getPriceSetsByMembershipType($entityId); 
+            if (!in_array($pricesetId, $relevantPriceSets)) {
+              unset($table);
+              continue;
+            } else
+              // Add price sets requiring joins
+              $this->_reqPriceSets[$tableName] = $tableName;
             break;
 
           case 'contribution':
             $entityId = $this->_submitValues['contribution_page_id_value'];
+            $relevantPriceSets = $this->checkPriceSetEntity($pricesetId, $entityId);
+            if (!$relevantPriceSets) {
+              unset($table);
+              continue;
+            } else 
+              // Add price sets requiring joins
+              $this->_reqPriceSets[$tableName] = $tableName;
             break;
 
           case 'participant':
             $entityId = $this->_submitValues['event_id_value'];
+            $relevantPriceSets = $this->checkPriceSetEntity($pricesetId, $entityId);
+            if (!$relevantPriceSets) {
+              unset($table);
+              continue;
+            } else
+              // Add price sets requiring joins
+              $this->_reqPriceSets[$tableName] = $tableName;
             break;
         }
-
-        
-        $pseId = $this->checkPriceSetEntity($pricesetId, $entityId);
-
-        // var_dump($this->_submitValues);
-        // CRM_Core_Error::debug($tableName, 'tableName');
-        // var_dump($tableName);
-        // var_dump($pricesetId);
-        // var_dump($this->_entity);
-        // var_dump($entityId);
-        // var_dump($pseId);
-        // var_dump($this->_columns[$tablename]);
-        
-        if ($pseId == 0) {
-          unset($this->_columns[$tableName]);
-          continue;
-        }
-
-        // Add price sets requiring joins
-        $this->_reqPriceSets[$tableName] = $tableName;
           
       }
 
+      // var_dump($this->_columns);
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
           if (!empty($field['required']) ||
@@ -506,8 +539,9 @@ ORDER BY  cv.label
 
       foreach($this->_reqPriceSets AS $priceset) {
         $pricesetId = array_pop(explode('_',$priceset));
-        if ($this->checkPriceSetEntity($pricesetId, $entityId) == 0) continue;
-        $fieldlist = $this->getPriceFields($pricesetId, $entityId, 'fieldlist');          
+        if (in_array($this->_entity, array('participant','contribution')))
+          if (!$this->checkPriceSetEntity($pricesetId, $entityId)) continue;
+        $fieldlist = $this->getPriceFields($pricesetId, 'fieldlist');
           
         foreach($fieldlist AS $pf) {
 
@@ -703,7 +737,7 @@ ORDER BY  cv.label
     $this->buildACLClause($this->_aliases['civicrm_contact']);
     // build query
     $sql = $this->buildQuery(TRUE);
-    var_dump($sql);
+    // var_dump($sql);
 
     // build array of result based on column headers. This method also allows
     // modifying column headers before using it to build result set i.e $rows.

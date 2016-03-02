@@ -7,6 +7,9 @@
  */
 class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemreport_Report_Form_LineItem {
 
+  
+  protected $_entity = 'participant';
+
   /**
    * ennumerate which custom field groups will be exposed to the report query
    *
@@ -31,11 +34,12 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
    */
   public function __construct() {
 
-    if (empty($this->_submitValues))
+    if (is_null(CRM_Utils_Request::retrieve('event_id_value','String')))
     {
       $message = 'You must choose one or more events from the filters tab before running this report';
       $title = 'Choose one or more events';
-      $this->checkJoinCount($message,$title);
+      // $this->checkJoinCount($message,$title);
+      CRM_Core_Session::setStatus($message,$title,$type='error', $options=array('expires'=>0));
     }
 
     $this->_autoIncludeIndexedFieldsAsOrderBys = 1;
@@ -397,9 +401,95 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
     parent::__construct();
   }
 
+  /*public function getPriceSets($ids) {
+    $fields = array();
+    $pricesets = civicrm_api3('PriceSet', 'get', array(
+      'sequential' => 1,
+      'id' => array('IN'=>$ids),
+      'is_active' => 1,
+      'options' => array('limit'=>1000),
+    ));
+
+    return $pricesets['values'];
+  }*/
+
+  /**
+   * Determine relevant price sets for given events
+   *
+   * @param      array  $events  user selected event filter
+   *
+   * @return     array
+   */
+  public function getPriceSetsByEvent($events=null)
+  {
+    
+    $query = "SELECT DISTINCT pf.price_set_id id FROM civicrm_line_item li
+            JOIN civicrm_participant p ON li.entity_id = p.id
+            JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+            WHERE li.entity_table = 'civicrm_participant'";
+
+    if (count($events) > 0) {
+      $events = implode(',',$events);
+      $query .= sprintf("AND p.event_id IN (%s)", $events);
+    }
+
+    $dao = CRM_Core_DAO::executeQuery($query);
+    
+    $priceSets = array();
+    while ($dao->fetch())
+    {
+      $priceSets[] = $dao->id;
+    }
+
+    if (count($priceSets) > 0) {
+      return $priceSets;
+    }
+
+    return false;
+  }
+
+  /**
+   * Organize the columns and filters into groups by price set for display as accordions. 
+   * Limit fields in the select clause based on the relevant price sets
+   */
+  public function organizeColumns() {
+      // Create a column grouping for each price set
+
+      $this->_extendedEntities = array('participant'=>'CiviEvent','contribution'=>'CiviContribute','membership'=>'CiviMember');
+      $this->_entities = array('contribution','membership','participant');
+
+      switch ($this->_entity) {
+        case 'participant':
+          foreach (array_diff($this->_entities, array($this->_entity)) AS $other) {
+            unset($this->_columns['civicrm_'.$other]);
+            unset($this->_extendedEntities[$other]);
+          }
+          $entityId = CRM_Utils_Request::retrieve('event_id_value','String');
+          if (!is_array('entityId')) $entityId = (array) $entityId;
+        break;
+
+      }
+
+      $this->_relevantPriceSets = $this->getPriceSetsByEvent($entityId);
+      foreach ($this->getPriceSets($this->_relevantPriceSets) AS $ps) {
+        $this->_columns['civicrm_price_set_'.$ps['id']] = array(
+          'alias' => 'ps'.$ps['id'],
+          'dao' => 'CRM_Price_DAO_LineItem',
+          'grouping' => 'priceset-fields-'.$ps['name'],
+          'group_title' => 'Price Fields - '.$ps['title'],
+        );
+
+          $this->_columns['civicrm_price_set_'.$ps['id']]['fields'] = $this->getPriceFields($ps['id']);
+          $this->_columns['civicrm_price_set_'.$ps['id']]['filters'] = $this->getPriceFields($ps['id'], 'filters');
+          // var_dump($this->_columns['civicrm_price_set_93']['filters']);
+      }
+  }
+
   public function preProcess()
   {
     parent::preProcess();
   }
+
+
 
 }
