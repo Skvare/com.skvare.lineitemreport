@@ -414,6 +414,111 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
   }*/
 
   /**
+   * get the appropriate price field data based on the price sets and entity id. Return the data as needed for the select field list, filters, or other usage
+   *
+   * @param      string  $psId      price set id
+   * @param      string  $format    return format for price set data
+   * 
+   * @return     array price field ids
+   */
+  public function getPriceFields($psId, $format=null) {
+    // if (is_array($entityId)) $entityId = implode(',', $entityId);
+    switch($format) {
+      case 'fieldlist':
+        $select = "SELECT DISTINCT li.price_field_id FROM civicrm_line_item li
+        JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+
+        $order = "ORDER BY li.price_field_id;";
+        $query = sprintf("%s\n%s\n%s",$select,$where,$order);
+
+        $dao = CRM_Core_DAO::executeQuery($query);
+        $fields = array();
+        while ($dao->fetch()) {
+          $fields[] = $dao->price_field_id;
+        }
+
+        return $fields;
+
+      break;
+
+      case 'filters':
+        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf.html_type, pf.price_set_id FROM civicrm_line_item li
+        JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (isset($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+
+        $order = "ORDER BY li.price_field_id;";
+        $query = sprintf("%s\n%s\n%s",$select,$where,$order);
+
+        // var_dump($query);
+        $dao = CRM_Core_DAO::executeQuery($query);
+        $filters = array();
+        while ($dao->fetch()) {
+          $fieldname = sprintf('ps%d_%s',$dao->price_set_id,$dao->name);
+          $filters[$fieldname] = array(
+            'title' => $psId.'_'.$dao->label,
+            'alias' => 'pf'.$dao->price_field_id,
+            'type' => CRM_Utils_Type::T_INT,
+          );
+          if ($dao->is_enter_qty == 1) $filters[$fieldname]['name'] = 'qty';
+          if ($dao->html_type != 'Text') {
+            $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_MULTISELECT;
+            $result = civicrm_api3('PriceFieldValue', 'get', array(
+                'sequential' => 1,
+                'return' => "name,label",
+                'price_field_id' => $dao->price_field_id,
+              ));
+            $options = array();
+            foreach($result['values'] AS $fieldOption) {
+              $options[$fieldOption['id']] = $fieldOption['label'];
+            }
+            $filters[$fieldname]['options'] = $options;
+          } else 
+            $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_INT;
+          $filters[$fieldname]['name'] = $dao->price_field_value_id;
+        }
+
+        return $filters;
+      break;
+
+      default:
+        $select = "SELECT DISTINCT li.price_field_id, pf.name, pf.label, pf.is_enter_qty, pf.html_type FROM civicrm_line_item li
+        JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+
+        $order = "ORDER BY li.price_field_id;";
+        $query = sprintf("%s\n%s\n%s",$select,$where,$order);
+
+        // var_dump($query);
+        $dao = CRM_Core_DAO::executeQuery($query);
+        $fields = array();
+        while ($dao->fetch()) {
+          $fields[$dao->name] = array(
+            'title' => $psId.'_'.$dao->label,
+            'alias' => 'pf'.$dao->price_field_id,
+          );
+          if ($dao->is_enter_qty == 1) {
+            $fields[$dao->name]['name'] = 'qty';
+            $fields[$dao->name]['type'] = CRM_Utils_Type::T_INT;
+          }
+          else if ($dao->html_type != 'Text')
+            $fields[$dao->name]['name'] = 'label';
+          else
+            $fields[$dao->name]['name'] = 'line_total';
+
+        }
+        return $fields;
+    }
+    
+  }
+
+  /**
    * Determine relevant price sets for given events
    *
    * @param      array  $events  user selected event filter
