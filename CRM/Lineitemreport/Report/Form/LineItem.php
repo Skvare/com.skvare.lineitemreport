@@ -183,7 +183,7 @@ ORDER BY  cv.label
       break;
 
       case 'filters':
-        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf_html_type FROM civicrm_line_item li
+        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf.html_type FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
         -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
         $where = "WHERE pf.price_set_id = $psId";
