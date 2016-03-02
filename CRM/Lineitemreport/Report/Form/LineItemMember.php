@@ -42,7 +42,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    */
   public function __construct() {
 
-    if (empty(CRM_Utils_Request::retrieve('tid_value','String'))) {
+    if (null === CRM_Utils_Request::retrieve('tid_value','String')) {
       $message = 'You must choose one or more membership types from the filters tab before running this report';
       $title = 'Choose one or more membership types';
       // $this->checkJoinCount($message,$title);
