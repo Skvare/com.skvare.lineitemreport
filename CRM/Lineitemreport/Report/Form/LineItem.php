@@ -158,8 +158,8 @@ ORDER BY  cv.label
    * 
    * return     returns array of fields
    */
-  public function getPriceFields($psId, $format=null) {
-    if (is_array($entityId)) $entityId = implode(',', $entityId);
+/*  public function getPriceFields($psId, $format=null) {
+    // if (is_array($entityId)) $entityId = implode(',', $entityId);
     switch($format) {
       case 'fieldlist':
         $select = "SELECT DISTINCT li.price_field_id FROM civicrm_line_item li
@@ -183,7 +183,7 @@ ORDER BY  cv.label
       break;
 
       case 'filters':
-        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf_html_type FROM civicrm_line_item li
+       $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf.html_type FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
         -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
         $where = "WHERE pf.price_set_id = $psId";
@@ -244,7 +244,7 @@ ORDER BY  cv.label
         return $fields;
     }
     
-  }
+  }*/
 
   public function organizeColumns() {
       // Create a column grouping for each price set
@@ -346,8 +346,7 @@ ORDER BY  cv.label
       $select[] = " '' as blankColumnBegin";
       $this->_columnHeaders['blankColumnBegin']['title'] = '_ _ _ _';
     }
-    
-    // var_dump($this->_columns);
+
     foreach ($this->_columns as $tableName => &$table) {
       
      
@@ -373,13 +372,14 @@ ORDER BY  cv.label
         $this->_priceField = TRUE;
         $pricesetId = array_pop(explode('_',$tableName));
         
-        // Check to see if price set is assigned to user selected event(s). 
+        // Check to see if price set is assigned to relevant to the entity. 
         // If not, remove the table from the select clause and continue
 
         switch($this->_entity) {
           case 'membership':
-            $entityId = $this->_submitValues['tid_value'];
-            $relevantPriceSets = $this->getPriceSetsByMembershipType($entityId); 
+            $entityId = CRM_Utils_Request::retrieve('tid_value','String');
+            $relevantPriceSets = $this->getPriceSetsByMembershipType($entityId);
+
             if (!in_array($pricesetId, $relevantPriceSets)) {
               unset($table);
               continue;
@@ -389,7 +389,7 @@ ORDER BY  cv.label
             break;
 
           case 'contribution':
-            $entityId = $this->_submitValues['contribution_page_id_value'];
+            $entityId = CRM_Utils_Request::retrieve('contribution_page_id_value','String');
             $relevantPriceSets = $this->checkPriceSetEntity($pricesetId, $entityId);
             if (!$relevantPriceSets) {
               unset($table);
@@ -400,7 +400,7 @@ ORDER BY  cv.label
             break;
 
           case 'participant':
-            $entityId = $this->_submitValues['event_id_value'];
+            $entityId = CRM_Utils_Request::retrieve('event_id_value','String');
             $relevantPriceSets = $this->checkPriceSetEntity($pricesetId, $entityId);
             if (!$relevantPriceSets) {
               unset($table);
@@ -413,7 +413,6 @@ ORDER BY  cv.label
           
       }
 
-      // var_dump($this->_columns);
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
           if (!empty($field['required']) ||

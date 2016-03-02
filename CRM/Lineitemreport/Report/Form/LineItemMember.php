@@ -42,7 +42,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    */
   public function __construct() {
 
-    if (empty(CRM_Utils_Request::retrieve('tid_value','String'))) {
+    if (null === CRM_Utils_Request::retrieve('tid_value','String')) {
       $message = 'You must choose one or more membership types from the filters tab before running this report';
       $title = 'Choose one or more membership types';
       // $this->checkJoinCount($message,$title);
@@ -512,7 +512,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
       break;
 
       case 'filters':
-        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf.html_type FROM civicrm_line_item li
+        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf.html_type, pf.price_set_id FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
         -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
         $where = "WHERE pf.price_set_id = $psId";
@@ -525,15 +525,15 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
         $dao = CRM_Core_DAO::executeQuery($query);
         $filters = array();
         while ($dao->fetch()) {
-          $filters[$dao->name] = array(
+          $fieldname = sprintf('%s',$dao->price_set_id,$dao->name);
+          $filters[$fieldname] = array(
             'title' => $psId.'_'.$dao->label,
             'alias' => 'pf'.$dao->price_field_id,
             'type' => CRM_Utils_Type::T_INT,
           );
-          if ($dao->is_enter_qty == 1) $filters[$dao->name]['name'] = 'qty';
-          var_dump($dao->html_type);
+          if ($dao->is_enter_qty == 1) $filters[$fieldname]['name'] = 'qty';
           if ($dao->html_type != 'Text') {
-            $filters[$dao->name]['operatorType'] = CRM_Report_Form::OP_MULTISELECT;
+            $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_MULTISELECT;
             $result = civicrm_api3('PriceFieldValue', 'get', array(
                 'sequential' => 1,
                 'return' => "name,label",
@@ -543,15 +543,17 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
             foreach($result['values'] AS $fieldOption) {
               $options[$fieldOption['id']] = $fieldOption['label'];
             }
-            $filters[$dao->name]['options'] = $options;
-          }
-          $filters[$dao->name]['name'] = 'price_field_value_id';
+            $filters[$fieldname]['options'] = $options;
+          } else 
+            $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_INT;
+          $filters[$fieldname]['name'] = $dao->price_field_value_id;
         }
+
         return $filters;
       break;
 
       default:
-        $select = "SELECT DISTINCT li.price_field_id, pf.name, pf.label, pf.is_enter_qty FROM civicrm_line_item li
+        $select = "SELECT DISTINCT li.price_field_id, pf.name, pf.label, pf.is_enter_qty, pf.price_set_id FROM civicrm_line_item li
         JOIN civicrm_price_field pf ON li.price_field_id = pf.id
         -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
         $where = "WHERE pf.price_set_id = $psId";
@@ -564,12 +566,12 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
         $dao = CRM_Core_DAO::executeQuery($query);
         $fields = array();
         while ($dao->fetch()) {
-          $fields[$dao->name] = array(
+          $fields[$dao->price_set_id.'_'.$dao->name] = array(
             'title' => $psId.'_'.$dao->label,
             'alias' => 'pf'.$dao->price_field_id,
           );
-          if ($dao->is_enter_qty == 1) $fields[$dao->name]['name'] = 'qty';
-          else $fields[$dao->name]['name'] = 'line_total';
+          if ($dao->is_enter_qty == 1) $fields[$dao->price_set_id.'_'.$dao->name]['name'] = 'qty';
+          else $fields[$dao->price_set_id.'_'.$dao->name]['name'] = 'line_total';
         }
         return $fields;
     }
@@ -610,8 +612,8 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
             JOIN civicrm_price_field pf ON li.price_field_id = pf.id
             WHERE li.entity_table = 'civicrm_membership'";
 
-    if (count($events) > 0) {
-      $events = implode(',',$membershipTypes);
+    if (count($membershipTypes) > 0) {
+      $membershipTypes = implode(',',$membershipTypes);
       $query .= sprintf("AND m.membership_type_id IN (%s)", $membershipTypes);
     }
 
