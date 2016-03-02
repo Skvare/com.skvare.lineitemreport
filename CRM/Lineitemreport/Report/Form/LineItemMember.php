@@ -8,6 +8,7 @@
 class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_Report_Form_LineItem {
 
 
+  protected $_entity = 'membership';
   /**
    * a flag to denote whether the civicrm_member* tables need to be included in the SQL query
    *
@@ -33,7 +34,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    *
    * @var        array
    */
-  public $_drilldownReport = array('event/income' => 'Link to Detail Report');
+  public $_drilldownReport = array('membership/income' => 'Link to Detail Report');
 
   
   /**
@@ -41,10 +42,11 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    */
   public function __construct() {
 
-    if (empty($this->_submitValues)) {
+    if (empty(CRM_Utils_Request::retrieve('tid_value','String'))) {
       $message = 'You must choose one or more membership types from the filters tab before running this report';
       $title = 'Choose one or more membership types';
-      $this->checkJoinCount($message,$title);
+      // $this->checkJoinCount($message,$title);
+      CRM_Core_Session::setStatus($message,$title,$type='error', $options=array('expires'=>0));
     }
     
 
@@ -477,6 +479,196 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
       }
     }
   }
+
+  /**
+   * get the appropriate price field data based on the price sets and entity id. Return the data as needed for the select field list, filters, or other usage
+   *
+   * @param      string  $psId      price set id
+   * @param      string  $format    return format for price set data
+   * 
+   * @return     array price field ids
+   */
+  public function getPriceFields($psId, $format=null) {
+    // if (is_array($entityId)) $entityId = implode(',', $entityId);
+    switch($format) {
+      case 'fieldlist':
+        $select = "SELECT DISTINCT li.price_field_id FROM civicrm_line_item li
+        JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+
+        $order = "ORDER BY li.price_field_id;";
+        $query = sprintf("%s\n%s\n%s",$select,$where,$order);
+
+        $dao = CRM_Core_DAO::executeQuery($query);
+        $fields = array();
+        while ($dao->fetch()) {
+          $fields[] = $dao->price_field_id;
+        }
+
+        return $fields;
+
+      break;
+
+      case 'filters':
+        $select = "SELECT DISTINCT li.price_field_id, li.price_field_value_id, pf.name, pf.label, pf.is_enter_qty, pf.html_type FROM civicrm_line_item li
+        JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (isset($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+
+        $order = "ORDER BY li.price_field_id;";
+        $query = sprintf("%s\n%s\n%s",$select,$where,$order);
+
+        // var_dump($query);
+        $dao = CRM_Core_DAO::executeQuery($query);
+        $filters = array();
+        while ($dao->fetch()) {
+          $filters[$dao->name] = array(
+            'title' => $psId.'_'.$dao->label,
+            'alias' => 'pf'.$dao->price_field_id,
+            'type' => CRM_Utils_Type::T_INT,
+          );
+          if ($dao->is_enter_qty == 1) $filters[$dao->name]['name'] = 'qty';
+          var_dump($dao->html_type);
+          if ($dao->html_type != 'Text') {
+            $filters[$dao->name]['operatorType'] = CRM_Report_Form::OP_MULTISELECT;
+            $result = civicrm_api3('PriceFieldValue', 'get', array(
+                'sequential' => 1,
+                'return' => "name,label",
+                'price_field_id' => $dao->price_field_id,
+              ));
+            $options = array();
+            foreach($result['values'] AS $fieldOption) {
+              $options[$fieldOption['id']] = $fieldOption['label'];
+            }
+            $filters[$dao->name]['options'] = $options;
+          }
+          $filters[$dao->name]['name'] = 'price_field_value_id';
+        }
+        return $filters;
+      break;
+
+      default:
+        $select = "SELECT DISTINCT li.price_field_id, pf.name, pf.label, pf.is_enter_qty FROM civicrm_line_item li
+        JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+        -- JOIN civicrm_price_set_entity pse ON pf.price_set_id = pse.price_set_id";
+        $where = "WHERE pf.price_set_id = $psId";
+        // if (!empty($entityId)) $where .= " AND pse.entity_id IN ($entityId)";
+
+        $order = "ORDER BY li.price_field_id;";
+        $query = sprintf("%s\n%s\n%s",$select,$where,$order);
+
+        // var_dump($query);
+        $dao = CRM_Core_DAO::executeQuery($query);
+        $fields = array();
+        while ($dao->fetch()) {
+          $fields[$dao->name] = array(
+            'title' => $psId.'_'.$dao->label,
+            'alias' => 'pf'.$dao->price_field_id,
+          );
+          if ($dao->is_enter_qty == 1) $fields[$dao->name]['name'] = 'qty';
+          else $fields[$dao->name]['name'] = 'line_total';
+        }
+        return $fields;
+    }
+    
+  }
+
+  /**
+   * Get price set data for the specified ids
+   *
+   * @param      string  $ids    list of price set ids
+   *
+   * @return     <type>
+   */
+  /*public function getPriceSets($ids) {
+    $fields = array();
+    $pricesets = civicrm_api3('PriceSet', 'get', array(
+      'sequential' => 1,
+      'id' => array('IN'=>$ids),
+      'is_active' => 1,
+      'options' => array('limit'=>1000),
+    ));
+
+    return $pricesets['values'];
+  }*/
+
+  /**
+   * Determine relevant price sets for given membership types
+   *
+   * @param      array  $membershipTypes  user selected membership type filter
+   *
+   * @return     array
+   */
+  public function getPriceSetsByMembershipType($membershipTypes=null)
+  {
+    
+    $query = "SELECT DISTINCT pf.price_set_id as id FROM civicrm_line_item li
+            JOIN civicrm_membership m ON li.entity_id = m.id
+            JOIN civicrm_price_field pf ON li.price_field_id = pf.id
+            WHERE li.entity_table = 'civicrm_membership'";
+
+    if (count($events) > 0) {
+      $events = implode(',',$membershipTypes);
+      $query .= sprintf("AND m.membership_type_id IN (%s)", $membershipTypes);
+    }
+
+
+    $dao = CRM_Core_DAO::executeQuery($query);
+    
+    $priceSets = array();
+    while ($dao->fetch())
+    {
+      $priceSets[] = $dao->id;
+    }
+
+    if (count($priceSets) > 0) {
+      return $priceSets;
+    }
+
+    return false;
+  }
+
+  /**
+   * Organize the columns and filters into groups by price set for display as accordions. 
+   * Limit fields in the select clause based on the relevant price sets
+   */
+  public function organizeColumns() {
+      // Create a column grouping for each price set
+
+      $this->_extendedEntities = array('participant'=>'CiviEvent','contribution'=>'CiviContribute','membership'=>'CiviMember');
+      $this->_entities = array('contribution','membership','participant');
+
+      foreach (array_diff($this->_entities, array($this->_entity)) AS $other) {
+        if ($other != 'contribution') {
+          unset($this->_columns['civicrm_'.$other]);
+          unset($this->_extendedEntities[$other]);
+        }
+        
+      }
+      unset($this->_columns['civicrm_event']);
+      $entityId = (null === CRM_Utils_Request::retrieve('tid_value','String')) ? CRM_Utils_Request::retrieve('tid_value','String') : null;
+      if (!is_array('entityId')) $entityId = (array) $entityId;
+
+
+      
+      $this->_relevantPriceSets = $this->getPriceSetsByMembershipType($entityId);
+      foreach ($this->getPriceSets($this->_relevantPriceSets) AS $ps) {
+        $this->_columns['civicrm_price_set_'.$ps['id']] = array(
+          'alias' => 'ps'.$ps['id'],
+          'dao' => 'CRM_Price_DAO_LineItem',
+          'grouping' => 'priceset-fields-'.$ps['name'],
+          'group_title' => 'Price Fields - '.$ps['title'],
+        );
+
+          $this->_columns['civicrm_price_set_'.$ps['id']]['fields'] = $this->getPriceFields($ps['id']);
+          $this->_columns['civicrm_price_set_'.$ps['id']]['filters'] = $this->getPriceFields($ps['id'],'filters');
+      }
+  }
+
+
 
 
 }
