@@ -479,7 +479,7 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
             $filters[$fieldname]['options'] = $options;
           } else 
             $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_INT;
-          $filters[$fieldname]['name'] = $dao->price_field_value_id;
+          $filters[$fieldname]['name'] = 'price_field_value_id';
         }
 
         return $filters;
