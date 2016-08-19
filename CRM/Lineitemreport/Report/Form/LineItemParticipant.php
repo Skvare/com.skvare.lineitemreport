@@ -187,12 +187,12 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
           'participant_register_date' => array('title' => ts('Registration Date')),
           'total_paid' => array(
             'title' => ts('Total Paid'),
-            'dbAlias' => 'SUM(ft.total_amount)',
+            'dbAlias' => 'ft.total_amount',
             'type' => 1024,
           ),
           'balance' => array(
             'title' => ts('Balance'),
-            'dbAlias' => 'participant_civireport.fee_amount - SUM(ft.total_amount)',
+            'dbAlias' => 'participant_civireport.fee_amount - ft.total_amount',
             'type' => 1024,
           ),
         ),

@@ -737,6 +737,7 @@ ORDER BY  cv.label
     // build query
     $sql = $this->buildQuery(TRUE);
     // var_dump($sql);
+    // dpm($sql);
 
     // build array of result based on column headers. This method also allows
     // modifying column headers before using it to build result set i.e $rows.
@@ -927,6 +928,19 @@ ORDER BY  cv.label
         $entryFound = TRUE;
       }
 
+      if (array_key_exists('civicrm_participant_participant_fee_amount', $row)) {
+        $totalFeeAmount = $this->getLineItemEntityTotals($row['civicrm_participant_participant_record']);
+        if ($totalFeeAmount) {
+          $rows[$rowNum]['civicrm_participant_participant_fee_amount'] = $totalFeeAmount;
+        }
+
+        if (array_key_exists('civicrm_participant_balance', $row)) {
+          $rows[$rowNum]['civicrm_participant_balance'] = $totalFeeAmount - $row['civicrm_participant_total_paid'];
+        }
+      }
+
+
+
       // skip looking further in rows, if first row itself doesn't
       // have the column we need
       if (!$entryFound) {
@@ -1069,6 +1083,31 @@ ORDER BY  cv.label
         }
       }
     }
+  }
+
+  private function getLineItemEntityTotals($entityId) {
+
+    $contributions = civicrm_api3('LineItem','get',array('entity_id'=>$entityId,'return'=>'contribution_id'));
+    foreach ($contributions['values'] as $contribution) {
+      $contributionList[] = $contribution['contribution_id'];
+    }
+
+    $params = array(
+      'return' => 'line_total',
+      'contribution_id' => array('IN'=>$contributionList),
+    );
+
+    $lineItemTotals = civicrm_api3('LineItem','get',$params);
+
+    if ($lineItemTotals['count'] > 0) {
+      $entityTotal = 0;
+      foreach($lineItemTotals['values'] AS $lineItemTotal) {
+        $entityTotal = $entityTotal + (float) $lineItemTotal['line_total'];
+      }  
+      return $entityTotal;
+    }
+    
+    return false;
   }
 
     /**
