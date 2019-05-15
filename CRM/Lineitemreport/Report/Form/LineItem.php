@@ -1107,19 +1107,4 @@ ORDER BY  cv.label
     return FALSE;
   }
 
-  /**
-   * Apply common settings to entityRef fields.
-   *
-   * @param array $field
-   * @param string $table
-   */
-  public function setEntityRefDefaults(&$field, $table) {
-    $field['attributes'] = $field['attributes'] ? $field['attributes'] : array();
-    $field['attributes'] += array(
-      'entity' => CRM_Core_DAO_AllCoreTables::getBriefName(CRM_Core_DAO_AllCoreTables::getClassForTable($table)),
-      'multiple' => TRUE,
-      'placeholder' => ts('- select -'),
-    );
-  }
-
 }
