@@ -382,7 +382,7 @@ ORDER BY  cv.label
 
             if (!in_array($pricesetId, $relevantPriceSets)) {
               unset($table);
-              continue;
+              continue 2;
             } else
               // Add price sets requiring joins
               $this->_reqPriceSets[$tableName] = $tableName;
@@ -393,7 +393,7 @@ ORDER BY  cv.label
             $relevantPriceSets = $this->checkPriceSetEntity($pricesetId, $entityId);
             if (!$relevantPriceSets) {
               unset($table);
-              continue;
+              continue 2;
             } else 
               // Add price sets requiring joins
               $this->_reqPriceSets[$tableName] = $tableName;
@@ -404,7 +404,7 @@ ORDER BY  cv.label
             $relevantPriceSets = $this->checkPriceSetEntity($pricesetId, $entityId);
             if (!$relevantPriceSets) {
               unset($table);
-              continue;
+              continue 2;
             } else
               // Add price sets requiring joins
               $this->_reqPriceSets[$tableName] = $tableName;
