@@ -1,0 +1,5 @@
+Version 1.2 - 2019/05/17
+- PHP 7 warning and other issues.
+
+Version 1.1 - 2016/03/02
+- Initial release
