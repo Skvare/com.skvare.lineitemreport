@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file 
+ * @file
  * Provides fields and preprocessing for membership line item selections
  * \CRM\Lineitemreport\Report\Form\LineItemMember
  */
@@ -15,7 +15,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    * @var        boolean
    */
   protected $_memberField = FALSE;
-  
+
 
   /**
    * ennumerate which custom field groups will be exposed to the report query
@@ -36,7 +36,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    */
   public $_drilldownReport = array('membership/income' => 'Link to Detail Report');
 
-  
+
   /**
    * Column and option setup for the report
    */
@@ -48,7 +48,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
       // $this->checkJoinCount($message,$title);
       CRM_Core_Session::setStatus($message,$title,$type='error', $options=array('expires'=>0));
     }
-    
+
 
     $this->_autoIncludeIndexedFieldsAsOrderBys = 1;
 
@@ -361,7 +361,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
     $this->_columns['civicrm_contact']['fields']['sort_name']['no_display'] = TRUE;
 
    $this->organizeColumns();
-        
+
 
     $this->_currencyColumn = 'civicrm_participant_fee_currency';
     parent::__construct();
@@ -485,7 +485,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    *
    * @param      string  $psId      price set id
    * @param      string  $format    return format for price set data
-   * 
+   *
    * @return     array price field ids
    */
   public function getPriceFields($psId, $format=null) {
@@ -544,7 +544,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
               $options[$fieldOption['id']] = $fieldOption['label'];
             }
             $filters[$fieldname]['options'] = $options;
-          } else 
+          } else
             $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_INT;
           $filters[$fieldname]['name'] = $dao->price_field_value_id;
         }
@@ -575,7 +575,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
         }
         return $fields;
     }
-    
+
   }
 
   /**
@@ -606,20 +606,20 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
    */
   public function getPriceSetsByMembershipType($membershipTypes=null)
   {
-    
+
     $query = "SELECT DISTINCT pf.price_set_id as id FROM civicrm_line_item li
             JOIN civicrm_membership m ON li.entity_id = m.id
             JOIN civicrm_price_field pf ON li.price_field_id = pf.id
             WHERE li.entity_table = 'civicrm_membership'";
 
-    if (count($membershipTypes) > 0) {
+    if (is_array($membershipTypes) && count($membershipTypes) > 0) {
       $membershipTypes = implode(',',$membershipTypes);
       $query .= sprintf("AND m.membership_type_id IN (%s)", $membershipTypes);
     }
 
 
     $dao = CRM_Core_DAO::executeQuery($query);
-    
+
     $priceSets = array();
     while ($dao->fetch())
     {
@@ -634,7 +634,7 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
   }
 
   /**
-   * Organize the columns and filters into groups by price set for display as accordions. 
+   * Organize the columns and filters into groups by price set for display as accordions.
    * Limit fields in the select clause based on the relevant price sets
    */
   public function organizeColumns() {
@@ -648,14 +648,14 @@ class CRM_Lineitemreport_Report_Form_LineItemMember extends CRM_Lineitemreport_R
           unset($this->_columns['civicrm_'.$other]);
           unset($this->_extendedEntities[$other]);
         }
-        
+
       }
       unset($this->_columns['civicrm_event']);
       $entityId = (null === CRM_Utils_Request::retrieve('tid_value','String')) ? CRM_Utils_Request::retrieve('tid_value','String') : null;
       if (!is_array('entityId')) $entityId = (array) $entityId;
 
 
-      
+
       $this->_relevantPriceSets = $this->getPriceSetsByMembershipType($entityId);
       foreach ($this->getPriceSets($this->_relevantPriceSets) AS $ps) {
         $this->_columns['civicrm_price_set_'.$ps['id']] = array(

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file 
+ * @file
  * Provides fields and preprocessing for contribution line item selections
  * \CRM\Lineitemreport\Report\Form\LineItemContribution
  */
@@ -14,15 +14,15 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    * @var        boolean
    */
   protected $_contribField = FALSE;
-  
-  
+
+
   /**
    * a flag to denote whether the civicrm_line_item table needs to be included in the SQL query
    *
    * @var        boolean
    */
   protected $_lineitemField = FALSE;
-  
+
 
   /**
    * a flag to denote whether the civicrm_price_field tables need to be included in the SQL query
@@ -38,7 +38,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    * @var        boolean
    */
   protected $_memberField = FALSE;
-  
+
 
   /**
    * a flag to denote whether the civicrm_group table needs to be included in the SQL query
@@ -46,7 +46,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    * @var        boolean
    */
   protected $_groupFilter = TRUE;
-  
+
 
   /**
    * a flag to denote whether the civicrm_entity table needs to be included in the SQL query
@@ -54,7 +54,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    * @var        boolean
    */
   protected $_tagFilter = TRUE;
-  
+
 
   /**
    * a flag to denote whether the civicrm_contribution table needs to be included in the SQL query
@@ -62,12 +62,12 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    * @var        boolean
    */
   protected $_balance = FALSE;
-  
+
 
   /**
    * a flag to denote whether the civicrm_contribution table needs to be included in the SQL query
    *
-   * @var        array 
+   * @var        array
    */
   protected $activeCampaigns;
 
@@ -84,7 +84,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    */
   public $_drilldownReport = array('event/income' => 'Link to Detail Report');
 
-  
+
   /**
    * Column and option setup for the report
    */
@@ -339,7 +339,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
       );
     }
 
-    $this->organizeColumns();        
+    $this->organizeColumns();
 
     $this->_currencyColumn = 'civicrm_participant_fee_currency';
     parent::__construct();
@@ -350,7 +350,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    *
    * @param      string  $psId      price set id
    * @param      string  $format    return format for price set data
-   * 
+   *
    * @return     array price field ids
    */
   public function getPriceFields($psId, $format=null) {
@@ -409,7 +409,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
               $options[$fieldOption['id']] = $fieldOption['label'];
             }
             $filters[$fieldname]['options'] = $options;
-          } else 
+          } else
             $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_INT;
           $filters[$fieldname]['name'] = $dao->price_field_value_id;
         }
@@ -440,7 +440,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
         }
         return $fields;
     }
-    
+
   }
 
   /**
@@ -452,23 +452,23 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
    */
   public function getPriceSetsByContribution($contributionPages=null)
   {
-    
-    
+
+
     $select = "SELECT DISTINCT pf.price_set_id AS id FROM civicrm_line_item li";
     $from = "JOIN civicrm_price_field pf ON li.price_field_id = pf.id
             JOIN civicrm_price_set ps ON pf.price_set_id = ps.id";
     $where = "WHERE li.entity_table = 'civicrm_contribution'";
 
-    
-    if (count($contributionPages) > 0) {
+
+    if (is_array($contributionPages) && count($contributionPages) > 0) {
       $contributionPages = implode(',',$contributionPages);
       $from .= "\n JOIN civicrm_contribution c ON li.entity_id = c.id";
       $where .= sprintf("\nAND c.contribution_page_id IN (%s)", $contributionPages);
     }
-   
+
     $query = sprintf("%s\n%s\n%s",$select,$from,$where);
     $dao = CRM_Core_DAO::executeQuery($query);
-    
+
     $priceSets = array();
     while ($dao->fetch())
     {
@@ -483,7 +483,7 @@ class CRM_Lineitemreport_Report_Form_LineItemContribution extends CRM_Lineitemre
   }
 
   /**
-   * Organize the columns and filters into groups by price set for display as accordions. 
+   * Organize the columns and filters into groups by price set for display as accordions.
    * Limit fields in the select clause based on the relevant price sets
    */
   public function organizeColumns() {

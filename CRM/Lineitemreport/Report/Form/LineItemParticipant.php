@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @file 
+ * @file
  * Provides fields and preprocessing for participant line item selections
  * \CRM\Lineitemreport\Report\Form\LineItemParticipant
  */
 class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemreport_Report_Form_LineItem {
 
-  
+
   protected $_entity = 'participant';
 
   /**
@@ -28,7 +28,7 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
    */
   public $_drilldownReport = array('event/income' => 'Link to Detail Report');
 
-  
+
   /**
    * Column and option setup for the report
    */
@@ -395,7 +395,7 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
     }
 
     $this->organizeColumns();
-        
+
 
     $this->_currencyColumn = 'civicrm_participant_fee_currency';
     parent::__construct();
@@ -418,7 +418,7 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
    *
    * @param      string  $psId      price set id
    * @param      string  $format    return format for price set data
-   * 
+   *
    * @return     array price field ids
    */
   public function getPriceFields($psId, $format=null) {
@@ -477,7 +477,7 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
               $options[$fieldOption['id']] = $fieldOption['label'];
             }
             $filters[$fieldname]['options'] = $options;
-          } else 
+          } else
             $filters[$fieldname]['operatorType'] = CRM_Report_Form::OP_INT;
           $filters[$fieldname]['name'] = 'price_field_value_id';
         }
@@ -515,7 +515,7 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
         }
         return $fields;
     }
-    
+
   }
 
   /**
@@ -527,19 +527,19 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
    */
   public function getPriceSetsByEvent($events=null)
   {
-    
+
     $query = "SELECT DISTINCT pf.price_set_id id FROM civicrm_line_item li
             JOIN civicrm_participant p ON li.entity_id = p.id
             JOIN civicrm_price_field pf ON li.price_field_id = pf.id
             WHERE li.entity_table = 'civicrm_participant'";
 
-    if (count($events) > 0) {
+    if (is_array($events) && count($events) > 0) {
       $events = implode(',',$events);
       $query .= sprintf("AND p.event_id IN (%s)", $events);
     }
 
     $dao = CRM_Core_DAO::executeQuery($query);
-    
+
     $priceSets = array();
     while ($dao->fetch())
     {
@@ -554,7 +554,7 @@ class CRM_Lineitemreport_Report_Form_LineItemParticipant extends CRM_Lineitemrep
   }
 
   /**
-   * Organize the columns and filters into groups by price set for display as accordions. 
+   * Organize the columns and filters into groups by price set for display as accordions.
    * Limit fields in the select clause based on the relevant price sets
    */
   public function organizeColumns() {
