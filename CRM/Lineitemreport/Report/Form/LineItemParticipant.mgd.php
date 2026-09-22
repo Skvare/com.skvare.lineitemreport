@@ -4,17 +4,17 @@
  * Provides entity definition for registering the participant line item report template
  */
 
-return array(
-  0 => array(
+return [
+  0 => [
     'name' => 'Participant Line Items',
     'entity' => 'ReportTemplate',
-    'params' => array(
+    'params' => [
       'version' => 3,
       'label' => 'Participant Line Items',
       'description' => 'Participant report user-selectable columns and filters for line items',
       'class_name' => 'CRM_Lineitemreport_Report_Form_LineItemParticipant',
       'report_url' => 'lineitem/participant',
       'component' => 'CiviEvent',
-    ),
-  ),
-);
+    ],
+  ],
+];
